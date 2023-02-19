@@ -1,3 +1,8 @@
+<p align="left">
+<img src="./bot.gif" width="350" />
+</p>
+
+
 # Tryby
 
 ## Exp
