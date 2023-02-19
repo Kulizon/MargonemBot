@@ -1,5 +1,5 @@
 <p align="left">
-<img src="./bot.gif" width="350" />
+<img src="./bot.gif" width="550" />
 </p>
 
 
