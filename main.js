@@ -2,6 +2,10 @@ let userMobs = [];
 let ignoredGroups = [];
 let userExpMaps = [];
 let userAccessExpMaps = [];
+
+let e2Name = "";
+let e2WaitTime = [];
+
 let stop = window.localStorage.getItem("isRunning") === "true" ? false : true;
 let running =
   window.localStorage.getItem("isRunning") === "true" ? true : false;
@@ -18,6 +22,9 @@ const ignoredGroupsInput = document.getElementById("ignoredGroups");
 const mobNamesInput = document.getElementById("mobNames");
 const accessMapsInput = document.getElementById("accessMaps");
 
+const e2NameInput = document.getElementById("e2Name");
+const e2WaitTimeInput = document.getElementById("e2WaitTime");
+
 window.addEventListener("keydown", (event) => {
   if (event.key === "x" && !stop) {
     stop = true;
@@ -32,7 +39,7 @@ g.loadQueue.push({
   fun: function () {
     setInterval(() => {
       updateGameData();
-    }, 1500);
+    }, 500);
 
     window.localStorage.setItem("isChangingMap", "false");
     window.localStorage.setItem("isMoving", "false");
@@ -62,6 +69,12 @@ const runBot = async () => {
   ignoredGroups = [...ignoredGroupsInput.value.split(";")];
   ignoredGroups = ignoredGroups.map((grp) => grp.split("/"));
 
+  e2Name = e2NameInput.value;
+  e2WaitTime = [
+    e2WaitTimeInput.value.split(";")[0],
+    e2WaitTimeInput.value.split(";")[1],
+  ];
+
   const gNeighbourMaps = [];
 
   const gMap = initMap(userMobs);
@@ -79,8 +92,6 @@ const runBot = async () => {
 
   if (gData.autoheal === "true") await healIfAbleTo();
   if (gData.autoFillArrows === "true") await equipArrowsIfNeedTo();
-
-  console.log(mode);
 
   switch (mode) {
     case "exp":
@@ -123,9 +134,9 @@ const e2 = async () => {
 
   resetMap(gMap);
 
-  await attackNextMob();
+  const noE2 = await attackNextMob();
 
-  await delay(500).then(() => {
+  await delay(1500).then(() => {
     e2();
   });
 };
@@ -270,7 +281,7 @@ const switchBotState = (botState) => {
   const runningIndicator = document.getElementById("bIndicator");
   const botMenu = document.getElementById("bMenu");
 
-  runningIndicator.innerHTML = `Bot is ${running ? "running" : "stopped"}`;
+  runningIndicator.innerHTML = `Bot jest ${running ? "aktywny" : "wstrzymany"}`;
   if (running) botMenu.className = `bMenu disabled`;
   else botMenu.className = `bMenu`;
 };
@@ -436,7 +447,7 @@ const healIfAbleTo = () => {
         toHeal -= healingItems[i].healValue;
         // użyj potiona
         _g("moveitem&st=1&id=" + healingItems[i].id);
-        await delay(150);
+        await delay(100);
       }
 
       i--;
@@ -446,7 +457,7 @@ const healIfAbleTo = () => {
     while (toHeal > 0 && fullHealItems.length > 0 && i < fullHealItems.length) {
       _g("moveitem&st=1&id=" + fullHealItems[i].id);
       i++;
-      await delay(150);
+      await delay(100);
     }
 
     resolve();
@@ -465,29 +476,9 @@ const compareHealValues = (a, b) => {
   return 0;
 };
 
-const attackE2 = () => {
-  const promise = new Promise((resolve) => {
-    let cords;
-
-    const goPromise = new Promise((resolveGo) => {
-      cords = findNextMob();
-
-      setTimeout(() => resolveGo(), 50);
-    });
-
-    console.log(cords);
-    if (!cords) return;
-
-    goPromise.then(async () => {
-      move(cords, gMap);
-    });
-  });
-
-  return promise;
-};
-
 const attackNextMob = () => {
   const promise = new Promise((resolve) => {
+    const initialCords = { x: hero.x, y: hero.y };
     let cords;
     const goPromise = new Promise((resolveGo) => {
       cords = findNextMob(gMap, hero.x, hero.y);
@@ -498,6 +489,13 @@ const attackNextMob = () => {
 
     goPromise.then(async () => {
       if (cords) {
+        if (mode === "e2") {
+          min = parseInt(e2WaitTime[0]);
+          max = parseInt(e2WaitTime[1]);
+          console.log("radom wait");
+          await delay(Math.random() * (max - min) + min);
+        }
+
         move(cords, gMap);
         const attackPromise = new Promise(function (resolveAttack) {
           attackMobWhenReady(cords, resolveAttack);
@@ -508,6 +506,15 @@ const attackNextMob = () => {
           if (gData.autoheal === "true") await healIfAbleTo();
           if (gData.autoFillArrows === "true") await equipArrowsIfNeedTo();
 
+          if (mode === "e2") {
+            console.log(initialCords);
+            move(initialCords, gMap, true);
+            await new Promise(() =>
+              resolveWhenInPlace(initialCords, resolve, gMap)
+            );
+            // resolve
+          }
+
           resolve();
         });
       } else {
@@ -517,6 +524,35 @@ const attackNextMob = () => {
   });
 
   return promise;
+};
+
+const resolveWhenInPlace = (initialCords, resolve, gMap) => {
+  const isMoving = window.localStorage.getItem("isMoving");
+
+  if (stop) {
+    resolve();
+    return;
+  }
+
+  if (
+    isMoving === "false" &&
+    (hero.x !== initialCords.x || hero.y !== initialCords.y)
+  ) {
+    move(initialCords, gMap, true);
+    setTimeout(() => resolveWhenInPlace(initialCords, resolve, gMap), 500); // try again in 300 milliseconds
+    return;
+  }
+
+  if (
+    isMoving === "false" &&
+    hero.x === initialCords.x &&
+    hero.y === initialCords.y
+  ) {
+    resolve();
+    return;
+  } else {
+    setTimeout(() => resolveWhenInPlace(initialCords, resolve, gMap), 500); // try again in 300 milliseconds
+  }
 };
 
 const attackMobWhenReady = (cords, resolve, attackMobAlreadySet) => {

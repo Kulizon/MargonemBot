@@ -6,6 +6,8 @@ const getGameData = () => {
     ignoredGroups: "",
     userExpMaps: "",
     userAccessExpMaps: "",
+    e2Name: "",
+    e2WaitTime: "",
     autoheal: "",
     autoFillArrows: "",
   };
@@ -27,9 +29,12 @@ const getGameData = () => {
   data.bMode = localStorage.getItem("bMode");
 
   data.userMobs = mobNamesInput.value;
-  data.ignoredGroups = ignoredGroupsInput.value
+  data.ignoredGroups = ignoredGroupsInput.value;
   data.userExpMaps = mapsInput.value;
   data.userAccessExpMaps = accessMapsInput.value;
+
+  data.e2Name = e2NameInput.value;
+  data.e2WaitTime = e2WaitTimeInput.value;
 
   return data;
 };

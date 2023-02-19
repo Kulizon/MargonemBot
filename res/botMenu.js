@@ -4,21 +4,41 @@ const style = document.createElement("style");
 style.type = "text/css";
 style.innerHTML = `
 .bMenu { 
-    background: red; 
+    background: #18122B; 
     display: flex;
     flex-direction: column;
     position: absolute;
     z-index: 1000;
     width: 300px;
-    padding: 1rem 0.5rem;
+    padding: 1.25rem 0.75rem;
     top: 75px;
     left: 25px;
     opacity: 1;
-    containment: "window"
+    containment: "window";
+    font-family: Calibri;
 } 
 
+.bMenu button .bMenu input .bMenu label {
+  font-family: inherit
+}
+
+#bIndicator {
+  margin: 0.5rem 0 0.5rem;
+  font-weight: 500;
+  font-size: 1.75rem;
+}
+
 #dragHeader {
-  containment: "window"
+  containment: "window";
+  height: 30px;
+  background: #393053;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.bOptions {
+  margin: 1rem 0 0;
 }
 
 .bFormGroup {
@@ -28,7 +48,8 @@ style.innerHTML = `
 }
 
 .bFormGroup label {
-    margin: 0 0 0.25rem
+    margin: 0 0 0.25rem;
+    font-size: 0.95rem;
 }
 
 .bMenu.disabled .bOptions, .bMenu.disabled .bModeSettings{
@@ -55,11 +76,17 @@ style.innerHTML = `
 
 .bModeSettings button {
     width: 100%;
+    border: none;
+    font-weight: bold;
+    font-size: 0.8rem;
+    padding: 0.3rem;
+    font-color: #18122B;
 }
 
 .bModeSettings button.selected {
-    background: blue;
+    background: #635985;
 }
+
 
 `;
 document.getElementsByTagName("head")[0].appendChild(style);
@@ -112,30 +139,31 @@ const createModeSettingsTab = () => {
 
   const expButton = document.createElement("button");
   const e2Button = document.createElement("button");
-  const herosButton = document.createElement("button");
+  // const herosButton = document.createElement("button");
 
   if (mode === "exp") {
     expButton.className = "selected";
   } else if (mode === "e2") {
     e2Button.className = "selected";
-  } else if (mode === "heros") {
-    herosButton.className = "selected";
   }
+  // else if (mode === "heros") {
+  //   herosButton.className = "selected";
+  // }
   expButton.addEventListener("click", () => changeMode(`exp`));
   e2Button.addEventListener("click", () => changeMode(`e2`));
-  herosButton.addEventListener("click", () => changeMode(`heros`));
+  // herosButton.addEventListener("click", () => changeMode(`heros`));
 
   expButton.id = "exp";
   e2Button.id = "e2";
-  herosButton.id = "heros";
+  // herosButton.id = "heros";
 
-  expButton.innerText = "exp";
-  e2Button.innerText = "e2";
-  herosButton.innerText = "heros";
+  expButton.innerText = "Tryb Exp";
+  e2Button.innerText = "Tryb E2";
+  // herosButton.innerText = "heros";
 
   tab.appendChild(expButton);
   tab.appendChild(e2Button);
-  tab.appendChild(herosButton);
+  // tab.appendChild(herosButton);
   return tab;
 };
 
@@ -181,16 +209,20 @@ const keepInBounds = (element) => {
 };
 
 const initMenu = () => {
-  // create a new div element
   const botMenu = document.createElement("div");
   botMenu.className = "bMenu";
   botMenu.id = "bMenu";
 
-  // and give it some content
+  const dragHeader = document.createElement("div");
+  const dragText = document.createElement("h5");
+  dragText.innerHTML = "Przesuń mnie";
+  dragHeader.id = "dragHeader";
+  dragHeader.appendChild(dragText);
+  botMenu.appendChild(dragHeader);
+
   const runningText = document.createElement("div");
-  runningText.innerHTML = `Bot is ${running ? "running" : "stopped"}`;
+  runningText.innerHTML = `Bot jest ${running ? "aktywny" : "wstrzymany"}`;
   runningText.id = "bIndicator";
-  runningText.style = "font-size: 24px; margin-bottom: 0.75rem";
 
   botMenu.appendChild(runningText);
 
@@ -200,12 +232,6 @@ const initMenu = () => {
 
   const expOptions = createExpOptions();
   const e2Options = createE2Options();
-
-  const dragHeader = document.createElement("div");
-  dragHeader.id = "dragHeader";
-  dragHeader.style.height = "50px";
-  dragHeader.style.background = "blue";
-  botMenu.appendChild(dragHeader);
 
   botMenu.appendChild(botModeSettingsTab);
   botMenu.appendChild(universalOptions);
@@ -288,25 +314,59 @@ const dragElement = (element) => {
 
 const createUniversalSettings = () => {
   const healSwitch = createFormSwitch(
-    "Autoheal",
+    "Auto leczenie",
     localStorage.getItem("isAutoheal"),
     "isAutoheal"
   );
 
   const fillArrowsSwitch = createFormSwitch(
-    "Auto fill arrows",
+    "Uzupełnianie strzałek",
     localStorage.getItem("isAutoFillArrows"),
     "isAutoFillArrows"
   );
 
   const warnNoPotionsOrArrowsSwitch = createFormSwitch(
-    "Stop bot if no arrows or potions",
+    "Zatrzymaj, gdy zabkranie potek lub strzał",
     localStorage.getItem("warnNoPotionsOrArrows"),
     "warnNoPotionsOrArrows"
   );
 
+  const wrapper = document.createElement("div");
+  wrapper.id = "universalOptions";
+
+  wrapper.appendChild(healSwitch);
+  wrapper.appendChild(fillArrowsSwitch);
+  wrapper.appendChild(warnNoPotionsOrArrowsSwitch);
+
+  return wrapper;
+};
+
+const createExpOptions = () => {
+  const gData = JSON.parse(window.localStorage.getItem("g"));
+
+  const mobNamesInputGroup = crateFormGroup(
+    "Moby do bicia (nazwa moba;...)",
+    gData ? gData.userMobs : "",
+    "mobNames"
+  );
+  const ignoredGroupsInputGroup = crateFormGroup(
+    "Ignorowane grupy (mapa/id;...)",
+    gData ? gData.ignoredGroups : "",
+    "ignoredGroups"
+  );
+  const mapsInputGroup = crateFormGroup(
+    "Mapy do expienia (mapa;...)",
+    gData ? gData.userExpMaps : "",
+    "maps"
+  );
+  const accessMapsInputGroup = crateFormGroup(
+    "Mapy dojścia na exp (aktualna mapa;mapa;...)",
+    gData ? gData.userAccessExpMaps : "",
+    "accessMaps"
+  );
+
   const ignoreGroupsSwitch = createFormSwitch(
-    "Ignore certain groups",
+    "Ignoruj niektóre grupy",
     localStorage.getItem("ignoreGroups"),
     "ignoreGroups",
     () => {
@@ -316,41 +376,6 @@ const createUniversalSettings = () => {
         ignoredGroupsInputGroup.style.display = "flex";
       }
     }
-  );
-
-  const wrapper = document.createElement("div");
-  wrapper.id = "universalOptions";
-
-  wrapper.appendChild(healSwitch);
-  wrapper.appendChild(fillArrowsSwitch);
-  wrapper.appendChild(warnNoPotionsOrArrowsSwitch);
-  wrapper.appendChild(ignoreGroupsSwitch);
-
-  return wrapper;
-};
-
-const createExpOptions = () => {
-  const gData = JSON.parse(window.localStorage.getItem("g"));
-
-  const mobNamesInputGroup = crateFormGroup(
-    "Moby do bicia (nazwa)",
-    gData ? gData.userMobs : "",
-    "mobNames"
-  );
-  const ignoredGroupsInputGroup = crateFormGroup(
-    "Ignorowane grupy (mapa/id)",
-    gData ? gData.ignoredGroups : "",
-    "ignoredGroups"
-  );
-  const mapsInputGroup = crateFormGroup(
-    "Mapy do expienia (nazwa)",
-    gData ? gData.userExpMaps : "",
-    "maps"
-  );
-  const accessMapsInputGroup = crateFormGroup(
-    "Mapy dojścia na exp (nazwa)",
-    gData ? gData.userAccessExpMaps : "",
-    "accessMaps"
   );
 
   if (localStorage.getItem("ignoreGroups") === "false") {
@@ -363,6 +388,7 @@ const createExpOptions = () => {
   bOptions.className = "exp";
   bOptions.id = "exp";
 
+  bOptions.appendChild(ignoreGroupsSwitch);
   bOptions.appendChild(ignoredGroupsInputGroup);
   bOptions.appendChild(mobNamesInputGroup);
   bOptions.appendChild(mapsInputGroup);
@@ -376,12 +402,19 @@ const createE2Options = () => {
   bOptions.className = "e2";
   bOptions.id = "e2";
 
+  const e2NameInputGroup = crateFormGroup(
+    "E2 do bicia (nazwa moba;)",
+    gData ? gData.e2Name : "",
+    "e2Name"
+  );
+
   const waitTimeInputGroup = crateFormGroup(
     "Czas po wykryciu do bicia (min;max)",
-    localStorage.getItem("e2WaitTime"),
+    gData ? gData.e2WaitTime : "",
     "e2WaitTime"
   );
 
+  bOptions.appendChild(e2NameInputGroup);
   bOptions.appendChild(waitTimeInputGroup);
 
   return bOptions;

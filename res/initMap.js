@@ -38,30 +38,37 @@ const initMap = (mobs) => {
 
   switch (mode) {
     case "exp":
+      gData.mobs.forEach((mob) => {
+        let isIgnored = false;
+
+        if (localStorage.getItem("ignoreGroups") === "true") {
+          ignoredGroups.forEach((grp) => {
+            if (grp[0] === map.name && grp[1] === mob.grp.toString()) {
+              isIgnored = true;
+            }
+          });
+        }
+
+        if (mobs.includes(mob.nick) && !isIgnored) {
+          gMap[mob.y][mob.x] = 2;
+        }
+      });
+
       break;
 
     case "e2":
+      gData.mobs.forEach((mob) => {
+        // e2 instead of mobs
+        if (e2Name == mob.nick) {
+          gMap[mob.y][mob.x] = 2;
+        }
+      });
+
       break;
 
     case "heros":
       break;
   }
-
-  gData.mobs.forEach((mob) => {
-    let isIgnored = false;
-
-    if (localStorage.getItem("ignoreGroups") === "true") {
-      ignoredGroups.forEach((grp) => {
-        if (grp[0] === map.name && grp[1] === mob.grp.toString()) {
-          isIgnored = true;
-        }
-      });
-    }
-
-    if (mobs.includes(mob.nick) && !isIgnored) {
-      gMap[mob.y][mob.x] = 2;
-    }
-  });
 
   return gMap;
 };
